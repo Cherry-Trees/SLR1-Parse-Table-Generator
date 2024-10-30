@@ -140,20 +140,19 @@ void make_states(State *state)
 
     add_state(state);
     for (Rule *rule : state->rules_in_order) {
-        if (rule->index < rule->rhs.size()) {
-          
+        if (rule->index < rule->rhs.size()) {  
             Rule copy = rule->incremented();
             State *next = get_state(copy);
+            // If the state already exists, link this state to it and continue.
             if (next) {
                 state->adj.insert({rule->at_index_str(), next});
                 continue;
             }
-          
             // If the transition out already exists, just add it to that state.
             if (state->adj.find(rule->at_index_str()) != state->adj.end()) {
-                std::cout << "DUPLICATE:\n" << *state << "\n: " << rule->at_index_str() << std::endl; 
                 next = state->adj[rule->at_index_str()];
                 next->add_rule(copy);
+            // Construct the new State and link this State to it.
             } else {
                 next = new State;
                 next->add_rule(copy);
