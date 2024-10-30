@@ -53,8 +53,7 @@ class Rule
         bool operator!=(const Rule &other) const {return rhs != other.rhs || index != other.index;}
 
     
-    friend std::ostream &operator<<(std::ostream &os, const Rule rule)
-    {
+    friend std::ostream &operator<<(std::ostream &os, const Rule rule) {
         return os << rule.lhs << " -> " << rule.rhs.substr(0, rule.index) << '_' << rule.rhs.substr(rule.index);
     }
 };
