@@ -1,3 +1,5 @@
+/* Builds an automata given a grammar. */
+
 #include <iostream>
 #include <fstream>
 #include <string>
