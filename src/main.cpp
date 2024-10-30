@@ -33,11 +33,9 @@ class Rule
         Rule(const std::string line) : lhs(line.substr(0, 1)), rhs(line.substr(3)), index(0) {}
         Rule (const char *line) : lhs{line[0]}, rhs(line + 3), index(0) {}
 
-        char &at_index() {return rhs[index];}
-        char at_index() const {return rhs[index];}
-        std::string at_index_str() const {return {rhs[index]};}
-        char &at(const unsigned int i) {return rhs[i];}
-        char at(const unsigned int i) const {return rhs[i];}
+        char &get() {return rhs[index];}
+        char get() const {return rhs[index];}
+        std::string get_str() const {return {rhs[index]};}
 
         Rule *operator&() const {return (Rule *)this;}
 
@@ -49,34 +47,21 @@ class Rule
             return *this;
         }
 
-        Rule &operator++() {index++; return *this;}
-        Rule operator++(int) 
-        {
-            unsigned int temp = index; 
-            index++; 
-            return Rule(lhs, rhs, temp);
-        }
 
         Rule incremented() const {return Rule(lhs, rhs, index + 1);}
-
-        char &operator[](const unsigned int i) {return rhs[i];}
-        char operator[](const unsigned int i) const {return rhs[i];}
-
         bool operator==(const Rule &other) const {return rhs == other.rhs && index == other.index;}
         bool operator!=(const Rule &other) const {return rhs != other.rhs || index != other.index;}
 
     
-    friend std::ostream &operator<<(std::ostream &os, const Rule rule) {
+    friend std::ostream &operator<<(std::ostream &os, const Rule rule)
+    {
         return os << rule.lhs << " -> " << rule.rhs.substr(0, rule.index) << '_' << rule.rhs.substr(rule.index);
     }
 };
 
 std::unordered_map<std::string, std::vector<Rule>> global_nts;
-
-// Could make this a single unordered map<int, State *> so we don't store dups but are still able to index?
 std::unordered_set<State *> states;
 std::list<State *> states_in_order;
-
 
 class State
 {       
@@ -86,15 +71,26 @@ class State
         std::unordered_map<std::string, State *> adj;
 
         Rule *top() const {return rules_in_order.front();}
+
         void add_rule(const Rule &rule)
         {
             auto inserted = rules.insert(rule);
             if (inserted.second)
                 rules_in_order.push_back(&*inserted.first);   
         }
+
+        void add_rules(const std::vector<Rule> &rls)
+        {
+            for (const Rule &rl : rls) {
+                auto inserted = rules.insert(rl);
+                if (inserted.second)
+                    rules_in_order.push_back(&*inserted.first); 
+            }  
+        }
+
         void take_closure(const Rule rule)
         {
-            const char next_token = rule.at_index();
+            const char next_token = rule.get();
             const std::string next_token_str{next_token};
             if (std::isupper(next_token))
             {
@@ -115,6 +111,21 @@ class State
     }
 };
 
+
+class RuleGroup
+{
+    public:
+        std::list<Rule *> rules;
+        Rule *top() const {return rules.front();}
+        std::string get_str() const {return rules.front()->get_str();}
+        std::vector<Rule> incremented() const {
+            std::vector<Rule> rg;
+            for (Rule *rule : rules)
+                rg.push_back(rule->incremented());
+            return rg;
+        }
+};
+
 void add_state(State *state)
 {
     auto inserted = states.insert(state);
@@ -124,62 +135,82 @@ void add_state(State *state)
         delete state;  
 }
 
-State *get_state(const Rule &top)
+
+State *get_state(const std::vector<Rule> &top)
 {
-    for (State *state : states)
-        if (top == *state->top())
-            return state;
-    
+    for (State *state : states) {
+        unsigned int i = 0;
+        bool same = 1;
+        if (state->rules_in_order.size() >= top.size()) {
+            for (Rule *rule : state->rules_in_order) {
+                if (top[i] != *rule)
+                    same = 0;
+                
+                i++;
+                if (i >= top.size()) break;   
+            }
+            if (same) return state;
+        }
+    }
     return 0;
 }
 
 void make_states(State *state)
 {
+    // Take the closure.
     for (Rule *rule : state->rules_in_order)
         state->take_closure(*rule);
-
+    
+    // Store the state.
     add_state(state);
-    for (Rule *rule : state->rules_in_order) {
-        if (rule->index < rule->rhs.size()) {  
-            Rule copy = rule->incremented();
-            State *next = get_state(copy);
-            // If the state already exists, link this state to it and continue.
-            if (next) {
-                state->adj.insert({rule->at_index_str(), next});
-                continue;
-            }
-            // If the transition out already exists, just add it to that state.
-            if (state->adj.find(rule->at_index_str()) != state->adj.end()) {
-                next = state->adj[rule->at_index_str()];
-                next->add_rule(copy);
-            // Construct the new State and link this State to it.
-            } else {
-                next = new State;
-                next->add_rule(copy);
-                state->adj.insert({rule->at_index_str(), next});
-            }
-            make_states(next);
+
+    // Group rules based on next input token.
+    std::unordered_map<std::string, RuleGroup> rgs;
+    for (Rule *rule : state->rules_in_order)
+        if (rule->index < rule->rhs.size())   
+        {
+            RuleGroup rg; rg.rules.push_back(rule);
+            auto inserted = rgs.insert({rule->get_str(), rg});
+            if (!inserted.second)
+                rgs[rule->get_str()].rules.push_back(rule);
         }
+
+    
+    for (const std::pair<std::string, RuleGroup> &rg_pair : rgs)
+    {
+        const RuleGroup *rg = &rg_pair.second; // For readability.
+        std::vector<Rule> copies = rg->incremented();
+        State *next = get_state(copies);
+
+        if (next) {
+            state->adj.insert({rg->get_str(), next});
+            continue;
+        }
+
+        next = new State;
+        next->add_rules(copies);
+        state->adj.insert({rg->get_str(), next});
+        make_states(next);
     }
 }
 
 void build(std::ifstream &input)
 {
     State *start = new State;
+    std::cout << "INPUT:" << std::endl;
     while (input)
     {
         std::string line;
         std::getline(input, line);
         if (line != "")
         {
+            std::cout << line << std::endl;
             if (!global_nts.emplace(line.substr(0, 1), std::vector<Rule>{line}).second)
                 global_nts[line.substr(0, 1)].push_back(line);
         }
     }
-
     start->add_rule("P->S");
     make_states(start);
-
     std::cout << std::endl << "STATES:" << std::endl;
 
     unsigned int i = 0;
@@ -190,9 +221,7 @@ void build(std::ifstream &input)
     }
 
     for (State *s : states)
-    {
         delete s;
-    }
 }
 
 
