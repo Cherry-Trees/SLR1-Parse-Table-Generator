@@ -1,6 +1,6 @@
 # SLR1-Parser
 WIP\
-So far it just generates the automata.\
+So far it just generates the automata and first sets :3\
 \
 ex.\
 S -> aSa | B\
