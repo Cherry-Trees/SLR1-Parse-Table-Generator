@@ -334,9 +334,7 @@ void write_csv_file() {
     out.close();
 }
 
-void build(std::ifstream &in)
-{
-
+void build(std::ifstream &in) {
     std::string augment = "P->S";
     u_nonterminal_set.emplace('P', std::vector<Rule>{augment});
     rules_contain_nonterminal.push_back(u_nonterminal_set['P'].rules.front());
@@ -349,18 +347,7 @@ void build(std::ifstream &in)
     make_states(start);
     write_automata_dot_file();
     init_first_sets();
-
-    for (auto & [sym, nt] : u_nonterminal_set) {
-        nt.out_first(std::cout);
-    }
-
     init_follow_sets();
-
-    for (auto & [sym, nt] : u_nonterminal_set) {
-        nt.out_follow(std::cout);
-    }
-
-    // write_follow_dot_file();
     write_csv_file();
     clean_states();
 }
