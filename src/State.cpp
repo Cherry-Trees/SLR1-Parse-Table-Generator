@@ -2,46 +2,48 @@
 #include "globals.hpp"
 #include <iostream>
 
-extern std::unordered_map<std::string, std::vector<Rule>> non_terminals;
-extern std::unordered_set<State *> states;
-extern std::list<State *> states_in_order;
+extern std::unordered_map<char, NonTerminal> u_nonterminal_set;
 
 Rule *State::top() const {return rules_in_order.front();}
-
-void State::add_rule(const Rule &rule)
-{
-    auto inserted = rules.insert(rule);
-    if (inserted.second)
-        rules_in_order.push_back(&*inserted.first);   
+bool State::add_rule(const Rule &rule) {
+    auto inserted = rule_set.insert(rule);
+    if (inserted.second) {
+        rules_in_order.push_back(&*inserted.first);
+        return 1;
+    } return 0;
 }
 
-void State::add_rules(const std::vector<Rule> &rls)
-{
+void State::add_rules(const std::vector<Rule> &rls) {
     for (const Rule &rl : rls) {
-        auto inserted = rules.insert(rl);
+        auto inserted = rule_set.insert(rl);
         if (inserted.second)
             rules_in_order.push_back(&*inserted.first); 
     }  
 }
 
-void State::take_closure(const Rule rule)
-{
-    const char next_token = rule.get();
-    const std::string next_token_str{next_token};
-    if (std::isupper(next_token))
+void State::take_closure(const Rule rule) {
+    const char next = rule.get();
+    if (std::isupper(next))
     {
-        for (const Rule &global_rule : non_terminals[next_token_str])
-            add_rule(global_rule);
-        
-        if (next_token_str != rule.lhs)
-            for (const Rule &global_rule : non_terminals[next_token_str])
-                take_closure(global_rule);
+        bool rules_exist = 1;
+        for (const Rule &u_rule : u_nonterminal_set[next].rules)
+            if (add_rule(u_rule))
+                rules_exist = 0;
+
+        if (next != rule.lhs && (!rules_exist))
+            for (const Rule &u_rule : u_nonterminal_set[next].rules)
+                take_closure(u_rule);
     }
 } 
 
-std::ostream &operator<<(std::ostream &os, const State &state)
-{
+std::ostream &operator<<(std::ostream &os, const State &state) {
+    os << state.index << "\\n";
     for (const Rule *rule : state.rules_in_order)
         os << *rule << "\\n";
     return os;
+}
+
+void debug_print(const State &state) {
+    for (const Rule *rule : state.rules_in_order)
+        std::cout << *rule << std::endl;
 }
