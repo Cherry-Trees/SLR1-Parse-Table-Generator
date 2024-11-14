@@ -3,9 +3,11 @@
 
 #include "RuleGroup.hpp"
 #include "State.hpp"
+#include "NonTerminal.hpp"
 #include <fstream>
+#include <set>
 
-void add_state(State *state);
+bool add_state(State *state);
 State *get_state(const std::vector<Rule> &top);
 void make_states(State *state);
 void build(std::ifstream &input);
