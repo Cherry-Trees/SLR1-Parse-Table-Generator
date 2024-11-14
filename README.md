@@ -1,5 +1,5 @@
 # SLR1-Parser
-Generates an LRParse table for a given grammar.\
+Generates an LR Parse table for a given grammar.\
 \
 ex.\
 S -> aSa | B\
