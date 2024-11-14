@@ -4,12 +4,11 @@
 #include <vector>
 #include <list>
 
-class RuleGroup
-{
+class RuleGroup {
     public:
         std::list<Rule *> rules;
         Rule *top() const;
-        std::string get_str() const;
+        char get() const;
         std::vector<Rule> incremented() const;
 };
 
