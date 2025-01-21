@@ -1,4 +1,4 @@
-# SLR1-Parser
+# SLR1-Parse-Table-Generator
 Generates an SLR Parsing table for a given grammar.\
 \
 ex.\
