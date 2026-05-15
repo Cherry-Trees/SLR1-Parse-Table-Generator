@@ -1,15 +1,17 @@
 # SLR1-Parse-Table-Generator
-Generates an SLR Parsing table for a given grammar.\
-\
-ex.\
-S -> aSa | B\
+This is an SLR (1) parse table generator aimed at helping educators teach SLR (1) parsing. It generates the table in CSV format as well as the automata in a Graphviz DOT file.
+
+## Example
+```
+S -> aSa | B
 B -> bB | b
+```
+Generates the following automata\
 <br></br>
-Automata:\
 <img src="https://github.com/Cherry-Trees/SLR1-Parser/blob/main/src/automata.png" width="400" height="640" />
 \
 \
-Table:
+and table
 <pre>
 |---|---------|----|---------|---|---|
 |   | a       | b  | $       | S | B |
